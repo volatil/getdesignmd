@@ -27,6 +27,12 @@ type RawElement = {
 
 const MAX_ELEMENTS = 360;
 const VIEWPORT = { width: 1440, height: 1100 };
+const LOCAL_BROWSER_CANDIDATES = [
+  "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+];
 
 export async function analyzeUrl(url: string) {
   let parsedUrl: URL;
@@ -43,7 +49,7 @@ export async function analyzeUrl(url: string) {
 
   const browser = await chromium.launch({
     headless: true,
-    executablePath: resolveChromiumExecutable()
+    ...(await resolveChromiumLaunchOptions())
   });
 
   try {
@@ -129,17 +135,50 @@ export async function analyzeUrl(url: string) {
   }
 }
 
-function resolveChromiumExecutable() {
+async function resolveChromiumLaunchOptions() {
+  const serverlessChromium = await resolveServerlessChromium();
+  if (serverlessChromium) return serverlessChromium;
+
   const candidates = [
     process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
     chromium.executablePath(),
-    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
-    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
-    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"
+    ...LOCAL_BROWSER_CANDIDATES
   ].filter(Boolean) as string[];
 
-  return candidates.find((candidate) => existsSync(candidate));
+  const executablePath = candidates.find((candidate) => existsSync(candidate));
+  if (executablePath) return { executablePath };
+
+  if (process.platform === "linux") {
+    const bundledChromium = await resolveBundledChromium();
+    if (bundledChromium) return bundledChromium;
+  }
+
+  throw new Error(
+    "No se encontro un navegador Chromium disponible. En desarrollo ejecuta `npx playwright install chromium` o define PLAYWRIGHT_CHROMIUM_EXECUTABLE."
+  );
+}
+
+async function resolveServerlessChromium() {
+  if (process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || process.platform === "win32") return null;
+
+  const isServerless =
+    process.env.VERCEL ||
+    process.env.AWS_LAMBDA_FUNCTION_NAME ||
+    process.env.NETLIFY ||
+    process.env.PLAYWRIGHT_FORCE_SERVERLESS_CHROMIUM === "1";
+
+  if (!isServerless) return null;
+
+  return resolveBundledChromium();
+}
+
+async function resolveBundledChromium() {
+  const serverlessChromium = (await import("@sparticuz/chromium")).default;
+
+  return {
+    args: serverlessChromium.args,
+    executablePath: await serverlessChromium.executablePath()
+  };
 }
 
 function normalizeAnalysis(url: string, title: string, elements: RawElement[]): DesignAnalysis {
