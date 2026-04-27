@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://getdesignmd.vercel.app";
 const title = "Generador DESIGN.md";
 const description = "Extrae colores, tipografias y formas desde una URL.";
 const ogImage = {
