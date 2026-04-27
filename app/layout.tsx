@@ -3,7 +3,10 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Generador DESIGN.md",
-  description: "Extrae colores, tipografias y formas desde una URL."
+  description: "Extrae colores, tipografias y formas desde una URL.",
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default function RootLayout({
