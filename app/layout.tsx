@@ -4,6 +4,7 @@ import "./globals.css";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://getdesignmd.vercel.app";
 const title = "Generador DESIGN.md";
 const description = "Extrae colores, tipografias y formas desde una URL.";
+const url = "/";
 const ogImage = {
   url: "/og-image.png",
   width: 1200,
@@ -15,12 +16,18 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title,
   description,
+  alternates: {
+    canonical: url
+  },
   icons: {
     icon: "/icon.svg"
   },
   openGraph: {
     title,
     description,
+    url,
+    siteName: title,
+    locale: "es_CL",
     type: "website",
     images: [ogImage]
   },
